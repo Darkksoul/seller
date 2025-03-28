@@ -93,9 +93,15 @@ async def temp_mute_user(_, message):
 
 @Client.on_message(filters.command("pin") & filters.create(admin_filter))
 async def pin(_, message: Message):
-    if not message.reply_to_message: return
-    await message.reply_to_message.pin()
+    if not message.reply_to_message:
+        await message.reply("Please reply to a message to pin it.")
+        return
 
+    try:
+        await message.reply_to_message.pin()
+        await message.reply("✅ Message pinned successfully.")
+    except Exception as e:
+        await message.reply(f"❌ Failed to pin message: {e}")
 
 @Client.on_message(filters.command("unpin") & filters.create(admin_filter))             
 async def unpin(_, message: Message):
