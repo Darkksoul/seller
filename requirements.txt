@@ -1,5 +1,5 @@
 #---Main----#
-pyrogram
+pyrofork==2.3.61
 tgcrypto
 aiofiles     
 aiohttp
