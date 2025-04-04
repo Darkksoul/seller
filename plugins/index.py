@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 lock = asyncio.Lock()
 
+
 @Client.on_message(filters.chat(CHANNELS) & (filters.document | filters.video | filters.audio))         
 async def media(bot, message):
     for file_type in ("document", "video", "audio"):
@@ -21,23 +22,26 @@ async def media(bot, message):
     media.caption = message.caption
     await save_file(media)
 
+
+
 @Client.on_callback_query(filters.regex(r'^index'))
 async def index_files(bot, query):
     if query.data.startswith('index_cancel'):
         temp.CANCEL = True
-        return await query.answer("Cancelling Indexing", show_alert=True)
-
+        return await query.answer("Cᴀɴᴄᴇʟʟɪɴɢ Iɴᴅᴇxɪɴɢ", show_alert=True)
+        
     perfx, chat, lst_msg_id = query.data.split("#")
     if lock.locked():
-        return await query.answer('Wait Until Previous Process Complete', show_alert=True)
+        return await query.answer('Wᴀɪᴛ Uɴᴛɪʟ Pʀᴇᴠɪᴏᴜs Pʀᴏᴄᴇss Cᴏᴍᴘʟᴇᴛᴇ', show_alert=True)
     msg = query.message
     button = InlineKeyboardMarkup([[
-        InlineKeyboardButton('🚫 Cancel', "index_cancel")
+        InlineKeyboardButton('🚫 ᴄᴀɴᴄᴇʟʟ', "index_cancel")
     ]])
-    await msg.edit("Indexing is started ✨", reply_markup=button)
+    await msg.edit("ɪɴᴅᴇxɪɴɢ ɪs sᴛᴀʀᴛᴇᴅ ✨", reply_markup=button)                        
     try: chat = int(chat)
     except: chat = chat
     await index_files_to_db(int(lst_msg_id), chat, msg, bot)
+
 
 @Client.on_message((filters.forwarded | (filters.regex("(https://)?(t\.me/|telegram\.me/|telegram\.dog/)(c/)?(\d+|[a-zA-Z_0-9]+)/(\d+)$")) & filters.text ) & filters.private & filters.incoming & filters.user(ADMINS))
 async def send_for_index(bot, message):
@@ -60,11 +64,12 @@ async def send_for_index(bot, message):
     except: return await message.reply('Make Sure That Iam An Admin In The Channel, if channel is private')
     if k.empty: return await message.reply('This may be group and iam not a admin of the group.')
     buttons = InlineKeyboardMarkup([[
-        InlineKeyboardButton('✨ Yes', callback_data=f'index#{chat_id}#{last_msg_id}')
+        InlineKeyboardButton('✨ ʏᴇꜱ', callback_data=f'index#{chat_id}#{last_msg_id}')
         ],[
-        InlineKeyboardButton('🚫 Close', callback_data='close_data')
-    ]])
+        InlineKeyboardButton('🚫 ᴄʟᴏꜱᴇ', callback_data='close_data')
+    ]])               
     await message.reply(f'Do You Want To Index This Channel/ Group ?\n\nChat ID/ Username: <code>{chat_id}</code>\nLast Message ID: <code>{last_msg_id}</code>', reply_markup=buttons)
+    
 
 @Client.on_message(filters.command('setskip') & filters.user(ADMINS))
 async def set_skip_number(bot, message):
@@ -75,6 +80,7 @@ async def set_skip_number(bot, message):
         temp.CURRENT = int(skip)
     else:
         await message.reply("Give Me A Skip Number")
+
 
 async def index_files_to_db(lst_msg_id, chat, msg, bot):
     total_files = 0
@@ -99,7 +105,7 @@ async def index_files_to_db(lst_msg_id, chat, msg, bot):
                         await msg.edit_text(text=f"Total Messages Fetched: <code>{current}</code>\nTotal Messages Saved: <code>{total_files}</code>\nDuplicate Files Skipped: <code>{duplicate}</code>\nDeleted Messages Skipped: <code>{deleted}</code>\nNon-Media messages skipped: <code>{no_media + unsupported}</code>(Unsupported Media - `{unsupported}` )\nErrors Occurred: <code>{errors}</code>", reply_markup=reply)       
                     except FloodWait as t:
                         await asyncio.sleep(t.value)
-                        await msg.edit_text(text=f"Total Messages Fetched: <code>{current}</code>\nTotal Messages Saved: <code>{total_files}</code>\nDuplicate Files Skipped: <code>{duplicate}</code>\nDeleted Messages Skipped: <code>{deleted}</code>\nNon-Media messages skipped: <code>{no_media + unsupported}</code>(Unsupported Media - `{unsupported}` )\nErrors Occurred: <code>{errors}</code>", reply_markup=reply)
+                        await msg.edit_text(text=f"Total Messages Fetched: <code>{current}</code>\nTotal Messages Saved: <code>{total_files}</code>\nDuplicate Files Skipped: <code>{duplicate}</code>\nDeleted Messages Skipped: <code>{deleted}</code>\nNon-Media messages skipped: <code>{no_media + unsupported}</code>(Unsupported Media - `{unsupported}` )\nErrors Occurred: <code>{errors}</code>", reply_markup=reply)                          
                 if message.empty:
                     deleted += 1
                     continue
@@ -126,4 +132,4 @@ async def index_files_to_db(lst_msg_id, chat, msg, bot):
             logger.exception(e)
             await msg.edit(f'Error: {e}')
         else:
-            await msg.edit(f'Successfully Saved <code>{total_files}</code> To Database!\nDuplicate Files Skipped: <code>{duplicate}</code>\nDeleted Messages Skipped: <code>{deleted}</code>\nNon-Media Messages Skipped: <code>{no_media + unsupported}</code>(Unsupported Media - `{unsupported}` )\nErrors Occurred: <code>{errors}</code>')
+            await msg.edit(f'Succesfully Saved <code>{total_files}</code> To Database!\nDuplicate Files Skipped: <code>{duplicate}</code>\nDeleted Messages Skipped: <code>{deleted}</code>\nNon-Media Messages Skipped: <code>{no_media + unsupported}</code>(Unsupported Media - `{unsupported}` )\nErrors Occurred: <code>{errors}</code>')
