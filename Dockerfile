@@ -1,18 +1,17 @@
-# Use the latest stable Python image
 FROM python:3.10-slim
 
-# Update and install dependencies
-RUN apt update && apt upgrade -y && apt install -y git
+ENV PYTHONUNBUFFERED=1 
+PIP_NO_CACHE_DIR=1
 
-# Set working directory
+RUN apt update && apt upgrade -y && apt install -y git && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
-# Copy requirements and install dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir -U pip && pip install --no-cache-dir -r requirements.txt
+COPY requirements.txt . RUN pip install --no-cache-dir -U pip && pip install --no-cache-dir -r requirements.txt
 
-# Copy bot files into the container
 COPY . .
 
-# Start the bot
+RUN useradd -m botuser USER botuser
+
 CMD ["python", "bot.py"]
+
