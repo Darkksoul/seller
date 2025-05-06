@@ -19,10 +19,10 @@ instance = Instance.from_db(db)
 
 @instance.register
 class Media(Document):
-    file_id = StringField(required=True)
+    file_id = StringField(required=True, allow_none=False)
     file_ref = StringField(allow_none=True)
-    file_name = StringField(required=True)
-    file_size = IntegerField(required=True)
+    file_name = StringField(required=True, allow_none=False)
+    file_size = IntegerField(required=True, allow_none=False)
     file_type = StringField(allow_none=True)
     mime_type = StringField(allow_none=True)
     caption = StringField(allow_none=True)
