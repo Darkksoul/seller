@@ -4,7 +4,8 @@ import base64
 from struct import pack
 from pyrogram.file_id import FileId
 from pymongo.errors import DuplicateKeyError
-from umongo import Instance, Document, fields
+from umongo import Instance, Document
+from umongo.fields import StringField, IntegerField
 from motor.motor_asyncio import AsyncIOMotorClient
 from marshmallow.exceptions import ValidationError
 from info import FILE_DB_URL, FILE_DB_NAME, COLLECTION_NAME, MAX_RIST_BTNS
@@ -18,20 +19,20 @@ instance = Instance.from_db(db)
 
 @instance.register
 class Media(Document):
-    file_id = fields.StringField(attribute='_id')            # ✅ fixed
-    file_ref = fields.StringField(allow_none=True)           # ✅ fixed
-    file_name = fields.StringField(required=True)            # ✅ fixed
-    file_size = fields.IntegerField(required=True)           # ✅ fixed
-    file_type = fields.StringField(allow_none=True)          # ✅ fixed
-    mime_type = fields.StringField(allow_none=True)          # ✅ fixed
-    caption = fields.StringField(allow_none=True)            # ✅ fixed
+    file_id = StringField(required=True)
+    file_ref = StringField(allow_none=True)
+    file_name = StringField(required=True)
+    file_size = IntegerField(required=True)
+    file_type = StringField(allow_none=True)
+    mime_type = StringField(allow_none=True)
+    caption = StringField(allow_none=True)
 
     class Meta:
         collection_name = COLLECTION_NAME
 
 async def save_file(media):
     file_id, file_ref = unpack_new_file_id(media.file_id)
-    file_name = re.sub(r"(_|\-|\.|\+)", " ", str(media.file_name))
+    file_name = re.sub(r"[_\-\.\+]", " ", str(media.file_name))
     try:
         file = Media(
             file_id=file_id,
@@ -39,45 +40,47 @@ async def save_file(media):
             file_name=file_name,
             file_size=media.file_size,
             file_type=media.file_type,
-            mime_type=media.mime_type
+            mime_type=media.mime_type,
+            caption=getattr(media, "caption", None)
         )
     except ValidationError:
         logger.exception('Error Occurred While Saving File In Database')
         return False, 2
-    else:
-        try:
-            await file.commit()
-        except DuplicateKeyError:
-            logger.warning(str(getattr(media, "file_name", "NO FILE NAME")) + " is already saved in database")
-            return False, 0
-        else:
-            logger.info(str(getattr(media, "file_name", "NO FILE NAME")) + " is saved in database")
-            return True, 1
 
-async def get_search_results(query, file_type=None, max_results=(MAX_RIST_BTNS), offset=0, filter=False):
+    try:
+        await file.commit()
+    except DuplicateKeyError:
+        logger.warning(f"{media.file_name} is already saved in database")
+        return False, 0
+    else:
+        logger.info(f"{media.file_name} is saved in database")
+        return True, 1
+
+async def get_search_results(query, file_type=None, max_results=MAX_RIST_BTNS, offset=0, filter=False):
     query = query.strip()
     if not query:
         raw_pattern = '.'
     elif ' ' not in query:
-        raw_pattern = r'(\b|[\.\+\-_])' + query + r'(\b|[\.\+\-_])'
+        raw_pattern = r'(\b|[_.+-])' + re.escape(query) + r'(\b|[_.+-])'
     else:
-        raw_pattern = query.replace(' ', r'.*[\s\.\+\-_]')
+        raw_pattern = re.escape(query).replace('\\ ', r'.*[\s_.+-]')
+
     try:
         regex = re.compile(raw_pattern, flags=re.IGNORECASE)
     except:
         return [], '', 0
+
     filter = {'file_name': regex}
     if file_type:
         filter['file_type'] = file_type
 
     total_results = await Media.count_documents(filter)
     next_offset = offset + max_results
-    if next_offset > total_results:
+    if next_offset >= total_results:
         next_offset = ''
 
     cursor = Media.find(filter)
-    cursor.sort('$natural', -1)
-    cursor.skip(offset).limit(max_results)
+    cursor.sort('$natural', -1).skip(offset).limit(max_results)
     files = await cursor.to_list(length=max_results)
     return files, next_offset, total_results
 
@@ -104,6 +107,7 @@ def encode_file_ref(file_ref: bytes) -> str:
     return base64.urlsafe_b64encode(file_ref).decode().rstrip("=")
 
 def unpack_new_file_id(new_file_id):
+    """Return file_id, file_ref"""
     decoded = FileId.decode(new_file_id)
     file_id = encode_file_id(
         pack(
