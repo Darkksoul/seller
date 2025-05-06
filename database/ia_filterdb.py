@@ -1,122 +1,119 @@
 import logging
+from struct import pack
 import re
 import base64
-from struct import pack
-from pyrogram.file_id import FileId
+from pyrogram.file\_id import FileId
 from pymongo.errors import DuplicateKeyError
-from umongo import Instance, Document
-from umongo.fields import StringField, IntegerField
-from motor.motor_asyncio import AsyncIOMotorClient
-from marshmallow.exceptions import ValidationError
-from info import FILE_DB_URL, FILE_DB_NAME, COLLECTION_NAME, MAX_RIST_BTNS
+from umongo import Instance, Document, fields
+from motor.motor\_asyncio import AsyncIOMotorClient
+from marshmallow\.exceptions import ValidationError
+from info import FILE\_DB\_URL, FILE\_DB\_NAME, COLLECTION\_NAME, MAX\_RIST\_BTNS
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(**name**)
 logger.setLevel(logging.INFO)
 
-client = AsyncIOMotorClient(FILE_DB_URL)
-db = client[FILE_DB_NAME]
-instance = Instance.from_db(db)
+client = AsyncIOMotorClient(FILE\_DB\_URL)
+db = client\[FILE\_DB\_NAME]
+instance = Instance.from\_db(db)
 
 @instance.register
 class Media(Document):
-    file_id = StringField(required=True, allow_none=False)
-    file_ref = StringField(allow_none=True)
-    file_name = StringField(required=True, allow_none=False)
-    file_size = IntegerField(required=True, allow_none=False)
-    file_type = StringField(allow_none=True)
-    mime_type = StringField(allow_none=True)
-    caption = StringField(allow_none=True)
+file\_id = fields.StrField(attribute='\_id')
+file\_ref = fields.StrField(allow\_none=True)
+file\_name = fields.StrField(required=True)
+file\_size = fields.IntField(required=True)
+file\_type = fields.StrField(allow\_none=True)
+mime\_type = fields.StrField(allow\_none=True)
+caption = fields.StrField(allow\_none=True)
 
-    class Meta:
-        collection_name = COLLECTION_NAME
+```
+class Meta:
+    collection_name = COLLECTION_NAME
+```
 
-async def save_file(media):
-    file_id, file_ref = unpack_new_file_id(media.file_id)
-    file_name = re.sub(r"[_\-\.\+]", " ", str(media.file_name))
-    try:
-        file = Media(
-            file_id=file_id,
-            file_ref=file_ref,
-            file_name=file_name,
-            file_size=media.file_size,
-            file_type=media.file_type,
-            mime_type=media.mime_type,
-            caption=getattr(media, "caption", None)
-        )
-    except ValidationError:
-        logger.exception('Error Occurred While Saving File In Database')
-        return False, 2
+async def save\_file(media):
+file\_id, file\_ref = unpack\_new\_file\_id(media.file\_id)
+file\_name = re.sub(r"(\_|-|.|+)", " ", str(media.file\_name))
+try:
+file = Media(
+file\_id=file\_id,
+file\_ref=file\_ref,
+file\_name=file\_name,
+file\_size=media.file\_size,
+file\_type=media.file\_type,
+mime\_type=media.mime\_type
+)
+except ValidationError:
+logger.exception('Error Occurred While Saving File In Database')
+return False, 2
+else:
+try:
+await file.commit()
+except DuplicateKeyError:
+logger.warning(str(getattr(media, "file\_name", "NO FILE NAME")) + " is already saved in database")
+return False, 0
+else:
+logger.info(str(getattr(media, "file\_name", "NO FILE NAME")) + " is saved in database")
+return True, 1
 
-    try:
-        await file.commit()
-    except DuplicateKeyError:
-        logger.warning(f"{media.file_name} is already saved in database")
-        return False, 0
-    else:
-        logger.info(f"{media.file_name} is saved in database")
-        return True, 1
+async def get\_search\_results(query, file\_type=None, max\_results=(MAX\_RIST\_BTNS), offset=0, filter=False):
+query = query.strip()
+if not query: raw\_pattern = '.'
+elif ' ' not in query: raw\_pattern = r'(\b|\[.+-*])' + query + r'(\b|\[.+-*])'
+else: raw\_pattern = query.replace(' ', r'.\*\[\s.+-\_]')
+try: regex = re.compile(raw\_pattern, flags=re.IGNORECASE)
+except: return \[], '', 0
+filter = {'file\_name': regex}
+if file\_type: filter\['file\_type'] = file\_type
 
-async def get_search_results(query, file_type=None, max_results=MAX_RIST_BTNS, offset=0, filter=False):
-    query = query.strip()
-    if not query:
-        raw_pattern = '.'
-    elif ' ' not in query:
-        raw_pattern = r'(\b|[_.+-])' + re.escape(query) + r'(\b|[_.+-])'
-    else:
-        raw_pattern = re.escape(query).replace('\\ ', r'.*[\s_.+-]')
+```
+total_results = await Media.count_documents(filter)
+next_offset = offset + max_results
+if next_offset > total_results: next_offset = ''
 
-    try:
-        regex = re.compile(raw_pattern, flags=re.IGNORECASE)
-    except:
-        return [], '', 0
+cursor = Media.find(filter)
+# Sort by recent
+cursor.sort('$natural', -1)
+# Slice files according to offset and max results
+cursor.skip(offset).limit(max_results)
+# Get list of files
+files = await cursor.to_list(length=max_results)
+return files, next_offset, total_results
+```
 
-    filter = {'file_name': regex}
-    if file_type:
-        filter['file_type'] = file_type
+async def get\_file\_details(query):
+filter = {'file\_id': query}
+cursor = Media.find(filter)
+filedetails = await cursor.to\_list(length=1)
+return filedetails
 
-    total_results = await Media.count_documents(filter)
-    next_offset = offset + max_results
-    if next_offset >= total_results:
-        next_offset = ''
+def encode\_file\_id(s: bytes) -> str:
+r = b""
+n = 0
+for i in s + bytes(\[22]) + bytes(\[4]):
+if i == 0:
+n += 1
+else:
+if n:
+r += b"\x00" + bytes(\[n])
+n = 0
+r += bytes(\[i])
+return base64.urlsafe\_b64encode(r).decode().rstrip("=")
 
-    cursor = Media.find(filter)
-    cursor.sort('$natural', -1).skip(offset).limit(max_results)
-    files = await cursor.to_list(length=max_results)
-    return files, next_offset, total_results
+def encode\_file\_ref(file\_ref: bytes) -> str:
+return base64.urlsafe\_b64encode(file\_ref).decode().rstrip("=")
 
-async def get_file_details(query):
-    filter = {'file_id': query}
-    cursor = Media.find(filter)
-    filedetails = await cursor.to_list(length=1)
-    return filedetails
-
-def encode_file_id(s: bytes) -> str:
-    r = b""
-    n = 0
-    for i in s + bytes([22]) + bytes([4]):
-        if i == 0:
-            n += 1
-        else:
-            if n:
-                r += b"\x00" + bytes([n])
-                n = 0
-            r += bytes([i])
-    return base64.urlsafe_b64encode(r).decode().rstrip("=")
-
-def encode_file_ref(file_ref: bytes) -> str:
-    return base64.urlsafe_b64encode(file_ref).decode().rstrip("=")
-
-def unpack_new_file_id(new_file_id):
-    """Return file_id, file_ref"""
-    decoded = FileId.decode(new_file_id)
-    file_id = encode_file_id(
-        pack(
-            "<iiqq",
-            int(decoded.file_type),
-            decoded.dc_id,
-            decoded.media_id,
-            decoded.access_hash
-        )
-    )
-    file_ref = encode_file_ref(decoded.file_reference)
-    return file_id, file_ref
+def unpack\_new\_file\_id(new\_file\_id):
+"""Return file\_id, file\_ref"""
+decoded = FileId.decode(new\_file\_id)
+file\_id = encode\_file\_id(
+pack(
+"\<iiqq",
+int(decoded.file\_type),
+decoded.dc\_id,
+decoded.media\_id,
+decoded.access\_hash
+)
+)
+file\_ref = encode\_file\_ref(decoded.file\_reference)
+return file\_id, file\_ref
