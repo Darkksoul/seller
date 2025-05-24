@@ -1,9 +1,9 @@
 class script(object):  
-    START_TXT = """<b>✨ Hᴇʟʟᴏ {user}.
+    START_TXT = """<b>✨ 👋 Welcome {user} To @ClipmateEmpire Search Bot.
 
-Mʏ Nᴀᴍᴇ Is {bot}.
+🙏 Thanks for using {bot} Search Bot.
 
-I Cᴀɴ Pʀᴏᴠɪᴅᴇ Mᴏᴠɪᴇ Fᴏʀ Yᴏᴜ Jᴜsᴛ Aᴅᴅ Mᴇ Iɴ Yᴏᴜʀ Gʀᴏᴜᴘ </b>"""
+🔍 Search any Movie and Get fast Direct Videos Link </b>"""
     
     HELP_TXT = "Hᴇʏ {}\nHᴇʀᴇ Mꜱ Mʏ Hᴇʟᴩ"
 
