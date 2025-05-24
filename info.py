@@ -17,7 +17,7 @@ BOT_TOKEN = environ['BOT_TOKEN']
 
 # Bot settings
 WEB_SUPPORT = bool(environ.get("WEBHOOK", 'True')) # for web support on/off
-PICS = (environ.get('PICS' ,'https://telegra.ph/file/216c233c62bfeb241b359.jpg https://telegra.ph/file/f7a0e18e59b404d69ee3d.jpg https://telegra.ph/file/1a2b6e76af675065491a7.jpg https://te.legra.ph/file/142cfa1f05626acf24241.jpg')).split()
+PICS = (environ.get('PICS' ,'https://envs.sh/s4y.jpg')).split()
 UPTIME = time.time()
 
 # Admins, Channels & Users
@@ -44,7 +44,7 @@ START_MESSAGE = environ.get('START_MESSAGE', script.START_TXT)
 BUTTON_LOCK_TEXT = environ.get("BUTTON_LOCK_TEXT", script.BUTTON_LOCK_TEXT)
 FORCE_SUB_TEXT = environ.get('FORCE_SUB_TEXT', script.FORCE_SUB_TEXT)
 
-WELCOM_PIC = environ.get("WELCOM_PIC", "https://telegra.ph/file/216c233c62bfeb241b359.jpg https://telegra.ph/file/f7a0e18e59b404d69ee3d.jpg https://telegra.ph/file/1a2b6e76af675065491a7.jpg https://te.legra.ph/file/142cfa1f05626acf24241.jpg")
+WELCOM_PIC = environ.get("WELCOM_PIC", https://envs.sh/s4y.jpg")
 WELCOM_TEXT = environ.get("WELCOM_TEXT", script.WELCOM_TEXT)
 PMFILTER = is_enabled(environ.get('PMFILTER', "True"), True)
 G_FILTER = is_enabled(environ.get("G_FILTER", "True"), True)
