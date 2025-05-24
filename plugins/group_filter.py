@@ -226,7 +226,7 @@ async def auto_filter(client, msg, spoll=False):
                     InlineKeyboardButton(text=f"{get_size(file.file_size)}", callback_data=f'{pre}#{req}#{file.file_id}')
                 ] for file in files]
 
-        btn.insert(0, [InlineKeyboardButton("🔗 ʜᴏᴡ ᴛᴏ ᴅᴏᴡɴʟᴏᴀᴅ 🔗", "howdl")])
+        btn.insert(0, [InlineKeyboardButton("🔗 ʜᴏᴡ ᴛᴏ ᴅᴏᴡɴʟᴏᴀᴅ 🔗", "https://youtube.com/shorts/kYSGt_kEmQo")])
 
         if offset != "":
             key = f"{message.chat.id}-{message.id}"
